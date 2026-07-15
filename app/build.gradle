@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
-def keystorePropertiesFile = rootProject.file("keystore.properties")
+/*def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))*/
 
 android {
     compileSdkVersion = 35
@@ -35,14 +35,14 @@ android {
             }
         }
     }
-    signingConfigs {
+    /*signingConfigs {
         release {
             storeFile file(keystoreProperties['storeFile'])
             storePassword keystoreProperties['storePassword']
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
         }
-    }
+    }*/
 
 
     externalNativeBuild {
@@ -55,19 +55,19 @@ android {
         release {
             minifyEnabled = true
             proguardFiles.add(file('proguard-rules.pro'))
-            signingConfig signingConfigs.release
+//            signingConfig signingConfigs.release
             buildConfigField "boolean", "PLAY_STORE_RELEASE", "false"
             buildConfigField "String", "HOSTS_FILE_URI", "\"https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\""
             buildConfigField "String", "GITHUB_LATEST_API", "\"https://api.github.com/repos/M66B/NetGuard/releases/latest\""
         }
-        play {
+        /*play {
             minifyEnabled = true
             signingConfig signingConfigs.release
             proguardFiles.add(file('proguard-rules.pro'))
             buildConfigField "boolean", "PLAY_STORE_RELEASE", "true"
             buildConfigField "String", "HOSTS_FILE_URI", "\"\""
             buildConfigField "String", "GITHUB_LATEST_API", "\"\""
-        }
+        }*/
         debug {
             minifyEnabled = true
             proguardFiles.add(file('proguard-rules.pro'))
