@@ -37,7 +37,7 @@ import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ImageSpan;
-import android.util.Log;
+
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -71,6 +71,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.request.RequestOptions;
+import com.orhanobut.logger.Logger;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -872,7 +873,7 @@ public class AdapterRule extends RecyclerView.Adapter<AdapterRule.ViewHolder> im
 
         CursorAdapter adapter = (CursorAdapter) holder.lvAccess.getAdapter();
         if (adapter != null) {
-            Log.i(TAG, "Closing access cursor");
+            Logger.i("Closing access cursor");
             adapter.changeCursor(null);
             holder.lvAccess.setAdapter(null);
         }
@@ -939,7 +940,7 @@ public class AdapterRule extends RecyclerView.Adapter<AdapterRule.ViewHolder> im
             notify.edit().putBoolean(rule.packageName, rule.notify).apply();
 
         rule.updateChanged(context);
-        Log.i(TAG, "Updated " + rule);
+        Logger.i("Updated " + rule);
 
         List<Rule> listModified = new ArrayList<>();
         for (String pkg : rule.related) {

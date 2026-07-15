@@ -30,6 +30,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -43,6 +44,8 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.preference.PreferenceManager;
 
+import com.orhanobut.logger.Logger;
+
 public class ApplicationEx extends Application {
     private static final String TAG = "NetGuard.App";
 
@@ -51,7 +54,7 @@ public class ApplicationEx extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.i(TAG, "Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
+        Logger.i("Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             createNotificationChannels();
@@ -62,10 +65,10 @@ public class ApplicationEx extends Application {
             public void uncaughtException(Thread thread, Throwable ex) {
                 if (Util.ownFault(ApplicationEx.this, ex)
                         && Util.isPlayStoreInstall(ApplicationEx.this)) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     mPrevHandler.uncaughtException(thread, ex);
                 } else {
-                    Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.w(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     System.exit(1);
                 }
             }

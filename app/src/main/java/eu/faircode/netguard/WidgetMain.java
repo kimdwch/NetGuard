@@ -26,10 +26,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+
 import android.util.Log;
 import android.widget.RemoteViews;
 
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 public class WidgetMain extends AppWidgetProvider {
     private static final String TAG = "NetGuard.Widget";
@@ -55,10 +58,10 @@ public class WidgetMain extends AppWidgetProvider {
                     appWidgetManager.updateAppWidget(id, views);
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 

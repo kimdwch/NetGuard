@@ -25,6 +25,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+
 import android.util.Log;
 import android.util.Xml;
 import android.view.Menu;
@@ -34,6 +35,8 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.orhanobut.logger.Logger;
 
 import org.xmlpull.v1.XmlSerializer;
 
@@ -117,7 +120,7 @@ public class ActivityDns extends AppCompatActivity {
         new AsyncTask<Object, Object, Object>() {
             @Override
             protected Long doInBackground(Object... objects) {
-                Log.i(TAG, "Cleanup DNS");
+                Logger.i("Cleanup DNS");
                 DatabaseHelper.getInstance(ActivityDns.this).cleanupDns();
                 return null;
             }
@@ -134,7 +137,7 @@ public class ActivityDns extends AppCompatActivity {
         new AsyncTask<Object, Object, Object>() {
             @Override
             protected Long doInBackground(Object... objects) {
-                Log.i(TAG, "Clear DNS");
+                Logger.i("Clear DNS");
                 DatabaseHelper.getInstance(ActivityDns.this).clearDns();
                 return null;
             }
@@ -154,7 +157,7 @@ public class ActivityDns extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i(TAG, "onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
+        Logger.i("onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
         if (requestCode == REQUEST_EXPORT) {
             if (resultCode == RESULT_OK && data != null)
                 handleExport(data);
@@ -176,19 +179,19 @@ public class ActivityDns extends AppCompatActivity {
                 OutputStream out = null;
                 try {
                     Uri target = data.getData();
-                    Log.i(TAG, "Writing URI=" + target);
+                    Logger.i("Writing URI=" + target);
                     out = getContentResolver().openOutputStream(target);
                     xmlExport(out);
                     return null;
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     return ex;
                 } finally {
                     if (out != null)
                         try {
                             out.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                 }
             }

@@ -29,6 +29,8 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
+import com.orhanobut.logger.Logger;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,7 +57,7 @@ public class ServiceExternal extends IntentService {
         try {
             startForeground(ServiceSinkhole.NOTIFY_EXTERNAL, getForegroundNotification(this));
 
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             if (ACTION_DOWNLOAD_HOSTS_FILE.equals(intent.getAction())) {
@@ -83,7 +85,7 @@ public class ServiceExternal extends IntentService {
                     }
 
                     int contentLength = connection.getContentLength();
-                    Log.i(TAG, "Content length=" + contentLength);
+                    Logger.i("Content length=" + contentLength);
                     in = connection.getInputStream();
                     out = new FileOutputStream(tmp);
 
@@ -95,7 +97,7 @@ public class ServiceExternal extends IntentService {
                         size += bytes;
                     }
 
-                    Log.i(TAG, "Downloaded size=" + size);
+                    Logger.i("Downloaded size=" + size);
 
                     if (hosts.exists())
                         hosts.delete();
@@ -107,7 +109,7 @@ public class ServiceExternal extends IntentService {
                     ServiceSinkhole.reload("hosts file download", this, false);
 
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
 
                     if (tmp.exists())
                         tmp.delete();
@@ -116,13 +118,13 @@ public class ServiceExternal extends IntentService {
                         if (out != null)
                             out.close();
                     } catch (IOException ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
                     try {
                         if (in != null)
                             in.close();
                     } catch (IOException ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
 
                     if (connection instanceof HttpURLConnection)

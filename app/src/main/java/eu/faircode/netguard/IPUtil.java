@@ -19,9 +19,13 @@ package eu.faircode.netguard;
     Copyright 2015-2026 by Marcel Bokhorst (M66B)
 */
 
+
+
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
+import com.orhanobut.logger.Logger;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -38,7 +42,7 @@ public class IPUtil {
     public static List<CIDR> toCIDR(InetAddress start, InetAddress end) throws UnknownHostException {
         List<CIDR> listResult = new ArrayList<>();
 
-        Log.i(TAG, "toCIDR(" + start.getHostAddress() + "," + end.getHostAddress() + ")");
+        Logger.i("toCIDR(" + start.getHostAddress() + "," + end.getHostAddress() + ")");
 
         long from = inet2long(start);
         long to = inet2long(end);
@@ -61,7 +65,7 @@ public class IPUtil {
         }
 
         for (CIDR cidr : listResult)
-            Log.i(TAG, cidr.toString());
+            Logger.i(cidr.toString());
 
         return listResult;
     }
@@ -113,7 +117,7 @@ public class IPUtil {
                 this.address = InetAddress.getByName(ip);
                 this.prefix = prefix;
             } catch (UnknownHostException ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         }
 

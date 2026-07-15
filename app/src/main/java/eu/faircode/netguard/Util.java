@@ -46,6 +46,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -80,6 +81,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.orhanobut.logger.Logger;
 
 public class Util {
     private static final String TAG = "NetGuard.Util";
@@ -236,7 +239,7 @@ public class Util {
 
     public static boolean isPrivateDns(Context context) {
         String dns_mode = Settings.Global.getString(context.getContentResolver(), "private_dns_mode");
-        Log.i(TAG, "Private DNS mode=" + dns_mode);
+        Logger.i("Private DNS mode=" + dns_mode);
         if (dns_mode == null)
             dns_mode = "off";
         return (!"off".equals(dns_mode));
@@ -300,7 +303,7 @@ public class Util {
                     List<InetAddress> dns = lp.getDnsServers();
                     if (dns != null)
                         for (InetAddress d : dns) {
-                            Log.i(TAG, "DNS from LP: " + d.getHostAddress());
+                            Logger.i("DNS from LP: " + d.getHostAddress());
                             listDns.add(d.getHostAddress().split("%")[0]);
                         }
                 }
@@ -386,7 +389,7 @@ public class Util {
             setting = pm.getApplicationEnabledSetting(info.packageName);
         } catch (IllegalArgumentException ex) {
             setting = PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
-            Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.w(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
         if (setting == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
             return info.applicationInfo.enabled;
@@ -448,7 +451,7 @@ public class Util {
         try {
             return "com.android.vending".equals(context.getPackageManager().getInstallerPackageName(context.getPackageName()));
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             return false;
         }
     }
@@ -486,7 +489,7 @@ public class Util {
                 sb.append(Integer.toString(b & 0xff, 16).toLowerCase());
             return sb.toString();
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             return null;
         }
     }
@@ -675,7 +678,7 @@ public class Util {
                         .append(value == null ? "" : " (" + value.getClass().getSimpleName() + ")")
                         .append("\r\n");
             }
-            Log.d(TAG, stringBuilder.toString());
+            Logger.d(stringBuilder.toString());
         }
     }
 
@@ -685,7 +688,7 @@ public class Util {
         try {
             for (int i; (i = reader.read(read)) >= 0; sb.append(read, 0, i)) ;
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
         return sb;
     }
@@ -725,7 +728,7 @@ public class Util {
             if (bug.resolveActivity(context.getPackageManager()) != null)
                 context.startActivity(bug);
         } catch (Throwable exex) {
-            Log.e(TAG, exex.toString() + "\n" + Log.getStackTraceString(exex));
+            Logger.e(exex.toString() + "\n" + Log.getStackTraceString(exex));
         }
     }
 

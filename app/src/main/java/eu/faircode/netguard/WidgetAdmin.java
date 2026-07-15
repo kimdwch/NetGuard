@@ -32,6 +32,7 @@ import android.util.Log;
 import androidx.preference.PreferenceManager;
 
 import java.util.Date;
+import com.orhanobut.logger.Logger;
 
 public class WidgetAdmin extends ReceiverAutostart {
     private static final String TAG = "NetGuard.Widget";
@@ -46,7 +47,7 @@ public class WidgetAdmin extends ReceiverAutostart {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
 
-        Log.i(TAG, "Received " + intent);
+        Logger.i("Received " + intent);
         Util.logExtras(intent);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -79,7 +80,7 @@ public class WidgetAdmin extends ReceiverAutostart {
                 // Auto enable
                 int auto = Integer.parseInt(prefs.getString("auto_enable", "0"));
                 if (!enabled && auto > 0) {
-                    Log.i(TAG, "Scheduling enabled after minutes=" + auto);
+                    Logger.i("Scheduling enabled after minutes=" + auto);
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
                         am.set(AlarmManager.RTC_WAKEUP, new Date().getTime() + auto * 60 * 1000L, pi);
                     else
@@ -93,7 +94,7 @@ public class WidgetAdmin extends ReceiverAutostart {
                 WidgetLockdown.updateWidgets(context);
             }
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 }

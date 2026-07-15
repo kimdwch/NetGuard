@@ -29,6 +29,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.text.TextUtils;
+
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -41,6 +42,8 @@ import android.widget.TextView;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.ViewCompat;
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -109,7 +112,7 @@ public class AdapterLog extends CursorAdapter {
             vpn4 = InetAddress.getByName(prefs.getString("vpn4", "10.1.10.1"));
             vpn6 = InetAddress.getByName(prefs.getString("vpn6", "fd00:1:fd00:1:fd00:1:fd00:1"));
         } catch (UnknownHostException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 
@@ -304,7 +307,7 @@ public class AdapterLog extends CursorAdapter {
                         try {
                             return Util.getOrganization(args[0]);
                         } catch (Throwable ex) {
-                            Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.w(ex.toString() + "\n" + Log.getStackTraceString(ex));
                             return null;
                         }
                     }

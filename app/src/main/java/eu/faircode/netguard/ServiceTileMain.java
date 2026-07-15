@@ -30,9 +30,10 @@ import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
-import android.util.Log;
 
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import java.util.Date;
 
@@ -41,7 +42,7 @@ public class ServiceTileMain extends TileService implements SharedPreferences.On
     private static final String TAG = "NetGuard.TileMain";
 
     public void onStartListening() {
-        Log.i(TAG, "Start listening");
+        Logger.i("Start listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
         update();
@@ -65,13 +66,13 @@ public class ServiceTileMain extends TileService implements SharedPreferences.On
     }
 
     public void onStopListening() {
-        Log.i(TAG, "Stop listening");
+        Logger.i("Stop listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     public void onClick() {
-        Log.i(TAG, "Click");
+        Logger.i("Click");
 
         // Cancel set alarm
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -92,7 +93,7 @@ public class ServiceTileMain extends TileService implements SharedPreferences.On
             // Auto enable
             int auto = Integer.parseInt(prefs.getString("auto_enable", "0"));
             if (auto > 0) {
-                Log.i(TAG, "Scheduling enabled after minutes=" + auto);
+                Logger.i("Scheduling enabled after minutes=" + auto);
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
                     am.set(AlarmManager.RTC_WAKEUP, new Date().getTime() + auto * 60 * 1000L, pi);
                 else

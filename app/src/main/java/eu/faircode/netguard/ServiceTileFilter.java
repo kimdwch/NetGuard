@@ -26,17 +26,19 @@ import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
-import android.util.Log;
+
 import android.widget.Toast;
 
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 @TargetApi(Build.VERSION_CODES.N)
 public class ServiceTileFilter extends TileService implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.TileFilter";
 
     public void onStartListening() {
-        Log.i(TAG, "Start listening");
+        Logger.i("Start listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
         update();
@@ -60,13 +62,13 @@ public class ServiceTileFilter extends TileService implements SharedPreferences.
     }
 
     public void onStopListening() {
-        Log.i(TAG, "Stop listening");
+        Logger.i("Stop listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     public void onClick() {
-        Log.i(TAG, "Click");
+        Logger.i("Click");
 
         if (Util.canFilter(this)) {
             if (IAB.isPurchased(ActivityPro.SKU_FILTER, this)) {

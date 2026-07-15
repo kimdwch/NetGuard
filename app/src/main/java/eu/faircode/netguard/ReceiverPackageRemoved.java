@@ -22,16 +22,18 @@ package eu.faircode.netguard;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+
 
 import androidx.core.app.NotificationManagerCompat;
+
+import com.orhanobut.logger.Logger;
 
 public class ReceiverPackageRemoved extends BroadcastReceiver {
     private static final String TAG = "NetGuard.Receiver";
 
     @Override
     public void onReceive(final Context context, Intent intent) {
-        Log.i(TAG, "Received " + intent);
+        Logger.i("Received " + intent);
         Util.logExtras(intent);
 
         String action = (intent == null ? null : intent.getAction());

@@ -31,7 +31,10 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
+
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -94,7 +97,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void close() {
-        Log.w(TAG, "Database is being closed");
+        Logger.w("Database is being closed");
     }
 
     private DatabaseHelper(Context context) {
@@ -106,13 +109,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             File dbfile = context.getDatabasePath(DB_NAME);
             if (dbfile.exists()) {
-                Log.w(TAG, "Deleting " + dbfile);
+                Logger.w("Deleting " + dbfile);
                 dbfile.delete();
             }
 
             File dbjournal = context.getDatabasePath(DB_NAME + "-journal");
             if (dbjournal.exists()) {
-                Log.w(TAG, "Deleting " + dbjournal);
+                Logger.w("Deleting " + dbjournal);
                 dbjournal.delete();
             }
         }
@@ -120,7 +123,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        Log.i(TAG, "Creating database " + DB_NAME + " version " + DB_VERSION);
+        Logger.i("Creating database " + DB_NAME + " version " + DB_VERSION);
         createTableLog(db);
         createTableAccess(db);
         createTableDns(db);
@@ -135,7 +138,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createTableLog(SQLiteDatabase db) {
-        Log.i(TAG, "Creating log table");
+        Logger.i("Creating log table");
         db.execSQL("CREATE TABLE log (" +
                 " ID INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", time INTEGER NOT NULL" +
@@ -161,7 +164,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createTableAccess(SQLiteDatabase db) {
-        Log.i(TAG, "Creating access table");
+        Logger.i("Creating access table");
         db.execSQL("CREATE TABLE access (" +
                 " ID INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", uid INTEGER NOT NULL" +
@@ -182,7 +185,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createTableDns(SQLiteDatabase db) {
-        Log.i(TAG, "Creating dns table");
+        Logger.i("Creating dns table");
         db.execSQL("CREATE TABLE dns (" +
                 " ID INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", time INTEGER NOT NULL" +
@@ -197,7 +200,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createTableForward(SQLiteDatabase db) {
-        Log.i(TAG, "Creating forward table");
+        Logger.i("Creating forward table");
         db.execSQL("CREATE TABLE forward (" +
                 " ID INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", protocol INTEGER NOT NULL" +
@@ -210,7 +213,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void createTableApp(SQLiteDatabase db) {
-        Log.i(TAG, "Creating app table");
+        Logger.i("Creating app table");
         db.execSQL("CREATE TABLE app (" +
                 " ID INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", package TEXT" +
@@ -228,7 +231,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor = db.rawQuery("SELECT * FROM " + table + " LIMIT 0", null);
             return (cursor.getColumnIndex(column) >= 0);
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             return false;
         } finally {
             if (cursor != null)
@@ -238,7 +241,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Log.i(TAG, DB_NAME + " upgrading from version " + oldVersion + " to " + newVersion);
+        Logger.i(DB_NAME + " upgrading from version " + oldVersion + " to " + newVersion);
 
         db.beginTransaction();
         try {
@@ -359,12 +362,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (oldVersion == DB_VERSION) {
                 db.setVersion(oldVersion);
                 db.setTransactionSuccessful();
-                Log.i(TAG, DB_NAME + " upgraded to " + DB_VERSION);
+                Logger.i(DB_NAME + " upgraded to " + DB_VERSION);
             } else
                 throw new IllegalArgumentException(DB_NAME + " upgraded to " + oldVersion + " but required " + DB_VERSION);
 
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         } finally {
             db.endTransaction();
         }
@@ -399,7 +402,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                                     Integer.toString(packet.dport),
                                     Integer.toString(packet.uid)
                             });
-                    Log.i(TAG, "Deleted=" + deleted + " packet=" + packet + " dname=" + dname);
+                    Logger.i("Deleted=" + deleted + " packet=" + packet + " dname=" + dname);
                 }
                 ContentValues cv = new ContentValues();
                 cv.put("time", packet.time);
@@ -442,7 +445,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cv.put("interactive", interactive ? 1 : 0);
 
                 if (db.insert("log", null, cv) == -1)
-                    Log.e(TAG, "Insert log failed");
+                    Logger.e("Insert log failed");
 
                 db.setTransactionSuccessful();
             } finally {
@@ -487,7 +490,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             try {
                 // There an index on time
                 int rows = db.delete("log", "time < ?", new String[]{Long.toString(time)});
-                Log.i(TAG, "Cleanup log" +
+                Logger.i("Cleanup log" +
                         " before=" + SimpleDateFormat.getDateTimeInstance().format(new Date(time)) +
                         " rows=" + rows);
 
@@ -578,9 +581,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         cv.put("block", block);
 
                     if (db.insert("access", null, cv) == -1)
-                        Log.e(TAG, "Insert access failed");
+                        Logger.e("Insert access failed");
                 } else if (rows != 1)
-                    Log.e(TAG, "Update access failed rows=" + rows);
+                    Logger.e("Update access failed rows=" + rows);
 
                 db.setTransactionSuccessful();
             } finally {
@@ -630,7 +633,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
                     int rows = db.update("access", cv, selection, selectionArgs);
                     if (rows != 1)
-                        Log.e(TAG, "Update usage failed rows=" + rows);
+                        Logger.e("Update usage failed rows=" + rows);
                 }
 
                 db.setTransactionSuccessful();
@@ -655,7 +658,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cv.put("allowed", -1);
 
                 if (db.update("access", cv, "ID = ?", new String[]{Long.toString(id)}) != 1)
-                    Log.e(TAG, "Set access failed");
+                    Logger.e("Set access failed");
 
                 db.setTransactionSuccessful();
             } finally {
@@ -838,11 +841,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     cv.put("uid", rr.uid);
 
                     if (db.insert("dns", null, cv) == -1)
-                        Log.e(TAG, "Insert dns failed");
+                        Logger.e("Insert dns failed");
                     else
                         rows = 1;
                 } else if (rows != 1)
-                    Log.e(TAG, "Update dns failed rows=" + rows);
+                    Logger.e("Update dns failed rows=" + rows);
 
                 db.setTransactionSuccessful();
 
@@ -864,7 +867,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 // There is no index on time for write performance
                 long now = new Date().getTime();
                 db.execSQL("DELETE FROM dns WHERE time + ttl < " + now);
-                Log.i(TAG, "Cleanup DNS");
+                Logger.i("Cleanup DNS");
 
                 db.setTransactionSuccessful();
             } finally {
@@ -982,7 +985,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cv.put("ruid", ruid);
 
                 if (db.insert("forward", null, cv) < 0)
-                    Log.e(TAG, "Insert forward failed");
+                    Logger.e("Insert forward failed");
 
                 db.setTransactionSuccessful();
             } finally {
@@ -1064,7 +1067,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cv.put("enabled", enabled ? 1 : 0);
 
                 if (db.insert("app", null, cv) < 0)
-                    Log.e(TAG, "Insert app failed");
+                    Logger.e("Insert app failed");
 
                 db.setTransactionSuccessful();
             } finally {
@@ -1162,7 +1165,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 try {
                     listener.onChanged();
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
 
         } else if (msg.what == MSG_ACCESS) {
@@ -1170,7 +1173,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 try {
                     listener.onChanged();
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
 
         } else if (msg.what == MSG_FORWARD) {
@@ -1178,7 +1181,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 try {
                     listener.onChanged();
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
         }
     }

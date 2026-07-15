@@ -26,12 +26,15 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.PowerManager;
+
 import android.util.Log;
 import android.util.TypedValue;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+
+import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -78,7 +81,7 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
 
     @Override
     protected Object doInBackground(Object... args) {
-        Log.i(TAG, "Downloading " + url + " into " + file);
+        Logger.i("Downloading " + url + " into " + file);
 
         InputStream in = null;
         OutputStream out = null;
@@ -94,7 +97,7 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
             }
 
             int contentLength = connection.getContentLength();
-            Log.i(TAG, "Content length=" + contentLength);
+            Logger.i("Content length=" + contentLength);
             in = connection.getInputStream();
             out = new FileOutputStream(file);
 
@@ -109,7 +112,7 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
                     publishProgress((int) (size * 100 / contentLength));
             }
 
-            Log.i(TAG, "Downloaded size=" + size);
+            Logger.i("Downloaded size=" + size);
             return null;
         } catch (Throwable ex) {
             return ex;
@@ -118,13 +121,13 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
                 if (out != null)
                     out.close();
             } catch (IOException ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
             try {
                 if (in != null)
                     in.close();
             } catch (IOException ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
             if (connection instanceof HttpURLConnection)
@@ -141,7 +144,7 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
     @Override
     protected void onCancelled() {
         super.onCancelled();
-        Log.i(TAG, "Cancelled");
+        Logger.i("Cancelled");
         listener.onCancelled();
     }
 
@@ -150,7 +153,7 @@ public class DownloadTask extends AsyncTask<Object, Integer, Object> {
         wakeLock.release();
         NotificationManagerCompat.from(context).cancel(ServiceSinkhole.NOTIFY_DOWNLOAD);
         if (result instanceof Throwable) {
-            Log.e(TAG, result.toString() + "\n" + Log.getStackTraceString((Throwable) result));
+            Logger.e(result.toString() + "\n" + Log.getStackTraceString((Throwable) result));
             listener.onException((Throwable) result);
         } else
             listener.onCompleted();

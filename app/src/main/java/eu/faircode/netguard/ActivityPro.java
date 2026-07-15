@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -49,6 +50,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
 
 import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
+
+import com.orhanobut.logger.Logger;
 
 public class ActivityPro extends AppCompatActivity {
     private static final String TAG = "NetGuard.Pro";
@@ -79,7 +82,7 @@ public class ActivityPro extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "Create");
+        Logger.i("Create");
         Util.setTheme(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.pro);
@@ -164,7 +167,7 @@ public class ActivityPro extends AppCompatActivity {
             iab = new IAB(new IAB.Delegate() {
                 @Override
                 public void onReady(final IAB iab) {
-                    Log.i(TAG, "IAB ready");
+                    Logger.i("IAB ready");
                     try {
                         iab.updatePurchases();
                         updateState();
@@ -213,7 +216,7 @@ public class ActivityPro extends AppCompatActivity {
                                     if (id > 0 && pi != null)
                                         startIntentSenderForResult(pi.getIntentSender(), id, new Intent(), 0, 0, 0);
                                 } catch (Throwable ex) {
-                                    Log.i(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                                    Logger.i(ex.toString() + "\n" + Log.getStackTraceString(ex));
                                 }
                             }
                         };
@@ -237,19 +240,19 @@ public class ActivityPro extends AppCompatActivity {
                         btnDev2.setEnabled(true);
 
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
                 }
             }, this);
             iab.bind();
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 
     @Override
     protected void onDestroy() {
-        Log.i(TAG, "Destroy");
+        Logger.i("Destroy");
         iab.unbind();
         iab = null;
         super.onDestroy();
@@ -266,7 +269,7 @@ public class ActivityPro extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                Log.i(TAG, "Up");
+                Logger.i("Up");
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
             case R.id.menu_challenge:
@@ -344,7 +347,7 @@ public class ActivityPro extends AppCompatActivity {
                 }
             });
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
 
         ImageButton ibPaste = view.findViewById(R.id.ibPaste);

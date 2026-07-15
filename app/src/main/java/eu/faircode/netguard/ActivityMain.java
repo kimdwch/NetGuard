@@ -43,7 +43,7 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ImageSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Log;
+
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -58,6 +58,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -72,6 +73,8 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -118,12 +121,12 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
+        Logger.i("Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
         Util.logExtras(getIntent());
 
         // Check minimum Android version
         if (Build.VERSION.SDK_INT < MIN_SDK) {
-            Log.i(TAG, "SDK=" + Build.VERSION.SDK_INT);
+            Logger.i("SDK=" + Build.VERSION.SDK_INT);
             super.onCreate(savedInstanceState);
             setContentView(R.layout.android);
             return;
@@ -131,7 +134,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
         // Check for Xposed
         if (Util.hasXposed(this)) {
-            Log.i(TAG, "Xposed running");
+            Logger.i("Xposed running");
             super.onCreate(savedInstanceState);
             setContentView(R.layout.xposed);
             return;
@@ -196,19 +199,19 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
         swEnabled.setChecked(enabled);
         swEnabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Log.i(TAG, "Switch=" + isChecked);
+                Logger.i( "vpn enable =" + isChecked);
                 prefs.edit().putBoolean("enabled", isChecked).apply();
 
                 if (isChecked) {
                     try {
                         String alwaysOn = Settings.Secure.getString(getContentResolver(), "always_on_vpn_app");
-                        Log.i(TAG, "Always-on=" + alwaysOn);
+                        Logger.i("Always-on=" + alwaysOn);
                         if (!TextUtils.isEmpty(alwaysOn))
                             if (getPackageName().equals(alwaysOn)) {
                                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
                                         prefs.getBoolean("filter", false)) {
                                     int lockdown = Settings.Secure.getInt(getContentResolver(), "always_on_vpn_lockdown", 0);
-                                    Log.i(TAG, "Lockdown=" + lockdown);
+                                    Logger.i("Lockdown=" + lockdown);
                                     if (lockdown != 0) {
                                         swEnabled.setChecked(false);
                                         Toast.makeText(ActivityMain.this, R.string.msg_always_on_lockdown, Toast.LENGTH_LONG).show();
@@ -221,7 +224,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                                 return;
                             }
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
 
                     boolean filter = prefs.getBoolean("filter", false);
@@ -231,7 +234,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                     try {
                         final Intent prepare = VpnService.prepare(ActivityMain.this);
                         if (prepare == null) {
-                            Log.i(TAG, "Prepare done");
+                            Logger.i("Prepare done");
                             onActivityResult(REQUEST_VPN, RESULT_OK, null);
                         } else {
                             // Show dialog
@@ -244,12 +247,12 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             if (running) {
-                                                Log.i(TAG, "Start intent=" + prepare);
+                                                Logger.i("Start intent=" + prepare);
                                                 try {
                                                     // com.android.vpndialogs.ConfirmDialog required
                                                     startActivityForResult(prepare, REQUEST_VPN);
                                                 } catch (Throwable ex) {
-                                                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                                                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                                                     onActivityResult(REQUEST_VPN, RESULT_CANCELED, null);
                                                     prefs.edit().putBoolean("enabled", false).apply();
                                                 }
@@ -267,7 +270,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                         }
                     } catch (Throwable ex) {
                         // Prepare failed
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         prefs.edit().putBoolean("enabled", false).apply();
                     }
 
@@ -448,7 +451,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                         if (!IAB.isPurchased(ActivityPro.SKU_SPEED, ActivityMain.this))
                             prefs.edit().putBoolean("show_stats", false).apply();
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     } finally {
                         iab.unbind();
                     }
@@ -456,7 +459,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
             }, this);
             iab.bind();
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
 
         // Support
@@ -480,7 +483,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     protected void onNewIntent(Intent intent) {
-        Log.i(TAG, "New intent");
+        Logger.i("New intent");
         Util.logExtras(intent);
         super.onNewIntent(intent);
 
@@ -500,7 +503,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     protected void onResume() {
-        Log.i(TAG, "Resume");
+        Logger.i("Resume");
 
         if (Build.VERSION.SDK_INT < MIN_SDK || Util.hasXposed(this)) {
             super.onResume();
@@ -548,7 +551,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     protected void onPause() {
-        Log.i(TAG, "Pause");
+        Logger.i("Pause");
         super.onPause();
 
         if (Build.VERSION.SDK_INT < MIN_SDK || Util.hasXposed(this))
@@ -559,7 +562,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        Log.i(TAG, "Config");
+        Logger.i("Config");
         super.onConfigurationChanged(newConfig);
 
         if (Build.VERSION.SDK_INT < MIN_SDK || Util.hasXposed(this))
@@ -568,7 +571,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onDestroy() {
-        Log.i(TAG, "Destroy");
+        Logger.i("Destroy");
 
         if (Build.VERSION.SDK_INT < MIN_SDK || Util.hasXposed(this)) {
             super.onDestroy();
@@ -615,7 +618,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
-        Log.i(TAG, "onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
+        Logger.i("onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
         Util.logExtras(data);
 
         if (requestCode == REQUEST_VPN) {
@@ -637,7 +640,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
             // Do nothing
 
         } else {
-            Log.w(TAG, "Unknown activity result request=" + requestCode);
+            Logger.w("Unknown activity result request=" + requestCode);
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -658,14 +661,14 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                     intent.setData(uri);
                     startActivity(intent);
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex + "\n" + ex.getStackTrace());
+                    Logger.e(ex + "\n" + ex.getStackTrace());
                 }
         }
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String name) {
-        Log.i(TAG, "Preference " + name + "=" + prefs.getAll().get(name));
+        Logger.i("Preference " + name + "=" + prefs.getAll().get(name));
         if ("enabled".equals(name)) {
             // Get enabled
             boolean enabled = prefs.getBoolean(name, false);
@@ -729,7 +732,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
     private BroadcastReceiver onRulesChanged = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             if (adapter != null)
@@ -755,7 +758,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
     private BroadcastReceiver onQueueChanged = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
             int size = intent.getIntExtra(EXTRA_SIZE, -1);
             ivIcon.setVisibility(size == 0 ? View.VISIBLE : View.GONE);
@@ -766,7 +769,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
     private BroadcastReceiver packageChangedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
             updateApplicationList(null);
         }
@@ -842,7 +845,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
         if (getIntentSupport().resolveActivity(getPackageManager()) == null)
             menu.removeItem(R.id.menu_support);
 
-        menu.findItem(R.id.menu_apps).setEnabled(getIntentApps(this).resolveActivity(pm) != null);
+        menu.findItem(R.id.menu_apps).setEnabled(getIntentApps().resolveActivity(pm) != null);
 
         return true;
     }
@@ -889,7 +892,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.i(TAG, "Menu=" + item.getTitle());
+        Logger.i("Menu=" + item.getTitle());
 
         // Handle item selection
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -1025,13 +1028,13 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
     private void checkExtras(Intent intent) {
         // Approve request
         if (intent.hasExtra(EXTRA_APPROVE)) {
-            Log.i(TAG, "Requesting VPN approval");
+            Logger.i("Requesting VPN approval");
             swEnabled.toggle();
         }
     }
 
     private void updateApplicationList(final String search) {
-        Log.i(TAG, "Update search=" + search);
+        Logger.i("Update search=" + search);
 
         new AsyncTask<Object, Object, List<Rule>>() {
             private boolean refreshing = true;
@@ -1161,7 +1164,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
                         dialogDoze.show();
                     }
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex + "\n" + ex.getStackTrace());
+                    Logger.e(ex + "\n" + ex.getStackTrace());
                 }
         }
     }
@@ -1307,7 +1310,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
     }
 
     private void menu_apps() {
-        startActivity(getIntentApps(this));
+        startActivity(getIntentApps());
     }
 
     private static Intent getIntentPro(Context context) {
@@ -1328,7 +1331,7 @@ public class ActivityMain extends AppCompatActivity implements SharedPreferences
         return intent;
     }
 
-    private static Intent getIntentApps(Context context) {
+    private static Intent getIntentApps() {
         return new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/dev?id=8420080860664580239"));
     }
 

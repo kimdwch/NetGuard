@@ -28,11 +28,12 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.util.Log;
+
 
 import androidx.preference.PreferenceManager;
 
 import com.android.vending.billing.IInAppBillingService;
+import com.orhanobut.logger.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -59,7 +60,7 @@ public class IAB implements ServiceConnection {
     }
 
     public void bind() {
-        Log.i(TAG, "Bind");
+        Logger.i("Bind");
         Intent serviceIntent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
         serviceIntent.setPackage("com.android.vending");
         context.bindService(serviceIntent, this, Context.BIND_AUTO_CREATE);
@@ -67,7 +68,7 @@ public class IAB implements ServiceConnection {
 
     public void unbind() {
         if (service != null) {
-            Log.i(TAG, "Unbind");
+            Logger.i("Unbind");
             context.unbindService(this);
             service = null;
         }
@@ -75,14 +76,14 @@ public class IAB implements ServiceConnection {
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
-        Log.i(TAG, "Connected");
+        Logger.i("Connected");
         service = IInAppBillingService.Stub.asInterface(binder);
         delegate.onReady(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        Log.i(TAG, "Disconnected");
+        Logger.i("Disconnected");
         service = null;
     }
 
@@ -93,10 +94,10 @@ public class IAB implements ServiceConnection {
         Bundle query = new Bundle();
         query.putStringArrayList("ITEM_ID_LIST", skuList);
         Bundle bundle = service.getSkuDetails(IAB_VERSION, context.getPackageName(), "inapp", query);
-        Log.i(TAG, "getSkuDetails");
+        Logger.i("getSkuDetails");
         Util.logBundle(bundle);
         int response = (bundle == null ? -1 : bundle.getInt("RESPONSE_CODE", -1));
-        Log.i(TAG, "Response=" + getResult(response));
+        Logger.i("Response=" + getResult(response));
         if (response != 0)
             throw new IllegalArgumentException(getResult(response));
 
@@ -111,7 +112,7 @@ public class IAB implements ServiceConnection {
                     break;
                 }
             }
-        Log.i(TAG, sku + "=" + found);
+        Logger.i(sku + "=" + found);
 
         return found;
     }
@@ -126,11 +127,11 @@ public class IAB implements ServiceConnection {
         SharedPreferences.Editor editor = prefs.edit();
         for (String product : prefs.getAll().keySet())
             if (!ActivityPro.SKU_DONATION.equals(product)) {
-                Log.i(TAG, "removing SKU=" + product);
+                Logger.i("removing SKU=" + product);
                 editor.remove(product);
             }
         for (String sku : skus) {
-            Log.i(TAG, "adding SKU=" + sku);
+            Logger.i("adding SKU=" + sku);
             editor.putBoolean(sku, true);
         }
         editor.apply();
@@ -143,10 +144,10 @@ public class IAB implements ServiceConnection {
     public List<String> getPurchases(String type) throws RemoteException {
         // Get purchases
         Bundle bundle = service.getPurchases(IAB_VERSION, context.getPackageName(), type, null);
-        Log.i(TAG, "getPurchases");
+        Logger.i("getPurchases");
         Util.logBundle(bundle);
         int response = (bundle == null ? -1 : bundle.getInt("RESPONSE_CODE", -1));
-        Log.i(TAG, "Response=" + getResult(response));
+        Logger.i("Response=" + getResult(response));
         if (response != 0)
             throw new IllegalArgumentException(getResult(response));
 
@@ -158,10 +159,10 @@ public class IAB implements ServiceConnection {
         if (service == null)
             return null;
         Bundle bundle = service.getBuyIntent(IAB_VERSION, context.getPackageName(), sku, subscription ? "subs" : "inapp", "netguard");
-        Log.i(TAG, "getBuyIntent sku=" + sku + " subscription=" + subscription);
+        Logger.i("getBuyIntent sku=" + sku + " subscription=" + subscription);
         Util.logBundle(bundle);
         int response = (bundle == null ? -1 : bundle.getInt("RESPONSE_CODE", -1));
-        Log.i(TAG, "Response=" + getResult(response));
+        Logger.i("Response=" + getResult(response));
         if (response != 0)
             throw new IllegalArgumentException(getResult(response));
         if (!bundle.containsKey("BUY_INTENT"))
@@ -170,7 +171,7 @@ public class IAB implements ServiceConnection {
     }
 
     public static void setBought(String sku, Context context) {
-        Log.i(TAG, "Bought " + sku);
+        Logger.i("Bought " + sku);
         SharedPreferences prefs = context.getSharedPreferences("IAB", Context.MODE_PRIVATE);
         prefs.edit().putBoolean(sku, true).apply();
     }

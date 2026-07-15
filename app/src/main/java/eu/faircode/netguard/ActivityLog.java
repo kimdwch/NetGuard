@@ -30,6 +30,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -48,6 +49,8 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.NavUtils;
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -150,7 +153,7 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
             vpn4 = InetAddress.getByName(prefs.getString("vpn4", "10.1.10.1"));
             vpn6 = InetAddress.getByName(prefs.getString("vpn6", "fd00:1:fd00:1:fd00:1:fd00:1"));
         } catch (UnknownHostException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
 
         lvLog.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -174,7 +177,7 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
                 try {
                     addr = InetAddress.getByName(daddr);
                 } catch (UnknownHostException ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
 
                 String ip;
@@ -324,7 +327,7 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String name) {
-        Log.i(TAG, "Preference " + name + "=" + prefs.getAll().get(name));
+        Logger.i("Preference " + name + "=" + prefs.getAll().get(name));
         if ("log".equals(name)) {
             // Get enabled
             boolean log = prefs.getBoolean(name, false);
@@ -408,7 +411,7 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
 
         switch (item.getItemId()) {
             case android.R.id.home:
-                Log.i(TAG, "Up");
+                Logger.i("Up");
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
 
@@ -488,11 +491,11 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
                         if (prefs.getBoolean("pcap", false)) {
                             ServiceSinkhole.setPcap(false, ActivityLog.this);
                             if (pcap_file.exists() && !pcap_file.delete())
-                                Log.w(TAG, "Delete PCAP failed");
+                                Logger.w("Delete PCAP failed");
                             ServiceSinkhole.setPcap(true, ActivityLog.this);
                         } else {
                             if (pcap_file.exists() && !pcap_file.delete())
-                                Log.w(TAG, "Delete PCAP failed");
+                                Logger.w("Delete PCAP failed");
                         }
                         return null;
                     }
@@ -545,10 +548,10 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
             for (Rule rule : Rule.getRules(true, ActivityLog.this))
                 if (rule.name != null && rule.name.toLowerCase().contains(query.toLowerCase())) {
                     String newQuery = Integer.toString(rule.uid);
-                    Log.i(TAG, "Search " + query + " found " + rule.name + " new " + newQuery);
+                    Logger.i("Search " + query + " found " + rule.name + " new " + newQuery);
                     return newQuery;
                 }
-            Log.i(TAG, "Search " + query + " not found");
+            Logger.i("Search " + query + " not found");
         }
         return query;
     }
@@ -573,14 +576,14 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
-        Log.i(TAG, "onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
+        Logger.i("onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
 
         if (requestCode == REQUEST_PCAP) {
             if (resultCode == RESULT_OK && data != null)
                 handleExportPCAP(data);
 
         } else {
-            Log.w(TAG, "Unknown activity result request=" + requestCode);
+            Logger.w("Unknown activity result request=" + requestCode);
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -598,7 +601,7 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
                     Uri target = data.getData();
                     if (data.hasExtra("org.openintents.extra.DIR_PATH"))
                         target = Uri.parse(target + "/netguard.pcap");
-                    Log.i(TAG, "Export PCAP URI=" + target);
+                    Logger.i("Export PCAP URI=" + target);
                     out = getContentResolver().openOutputStream(target);
 
                     File pcap = new File(getDir("data", MODE_PRIVATE), "netguard.pcap");
@@ -611,24 +614,24 @@ public class ActivityLog extends AppCompatActivity implements SharedPreferences.
                         out.write(buf, 0, len);
                         total += len;
                     }
-                    Log.i(TAG, "Copied bytes=" + total);
+                    Logger.i("Copied bytes=" + total);
 
                     return null;
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     return ex;
                 } finally {
                     if (out != null)
                         try {
                             out.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                     if (in != null)
                         try {
                             in.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
 
                     // Resume capture

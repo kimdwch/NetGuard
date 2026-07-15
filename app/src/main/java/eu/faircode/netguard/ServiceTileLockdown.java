@@ -26,16 +26,18 @@ import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
-import android.util.Log;
+
 
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 @TargetApi(Build.VERSION_CODES.N)
 public class ServiceTileLockdown extends TileService implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "NetGuard.TileLockdown";
 
     public void onStartListening() {
-        Log.i(TAG, "Start listening");
+        Logger.i("Start listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
         update();
@@ -59,13 +61,13 @@ public class ServiceTileLockdown extends TileService implements SharedPreference
     }
 
     public void onStopListening() {
-        Log.i(TAG, "Stop listening");
+        Logger.i("Stop listening");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     public void onClick() {
-        Log.i(TAG, "Click");
+        Logger.i("Click");
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.edit().putBoolean("lockdown", !prefs.getBoolean("lockdown", false)).apply();

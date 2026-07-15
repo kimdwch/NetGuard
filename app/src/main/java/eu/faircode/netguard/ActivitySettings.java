@@ -50,6 +50,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
+
 import android.util.Log;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -65,6 +66,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.util.PatternsCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -324,7 +327,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
             cat_options.removePreference(screen.findPreference("update_check"));
 
         if (Util.isPlayStoreInstall(this)) {
-            Log.i(TAG, "Play store install");
+            Logger.i("Play store install");
             cat_advanced.removePreference(pref_block_domains);
             cat_advanced.removePreference(pref_rcode);
             cat_advanced.removePreference(pref_forwarding);
@@ -489,7 +492,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                Log.i(TAG, "Up");
+                Logger.i("Up");
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
             default:
@@ -755,7 +758,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
 
             File pcap_file = new File(getDir("data", MODE_PRIVATE), "netguard.pcap");
             if (pcap_file.exists() && !pcap_file.delete())
-                Log.w(TAG, "Delete PCAP failed");
+                Logger.w("Delete PCAP failed");
 
             if (prefs.getBoolean("pcap", false))
                 ServiceSinkhole.setPcap(true, this);
@@ -878,7 +881,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
-        Log.i(TAG, "onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
+        Logger.i("onActivityResult request=" + requestCode + " result=" + requestCode + " ok=" + (resultCode == RESULT_OK));
         if (requestCode == REQUEST_EXPORT) {
             if (resultCode == RESULT_OK && data != null)
                 handleExport(data);
@@ -896,7 +899,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                 handleHosts(data, true);
 
         } else {
-            Log.w(TAG, "Unknown activity result request=" + requestCode);
+            Logger.w("Unknown activity result request=" + requestCode);
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
@@ -950,19 +953,19 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                     Uri target = data.getData();
                     if (data.hasExtra("org.openintents.extra.DIR_PATH"))
                         target = Uri.parse(target + "/netguard_" + new SimpleDateFormat("yyyyMMdd").format(new Date().getTime()) + ".xml");
-                    Log.i(TAG, "Writing URI=" + target);
+                    Logger.i("Writing URI=" + target);
                     out = getContentResolver().openOutputStream(target);
                     xmlExport(out);
                     return null;
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     return ex;
                 } finally {
                     if (out != null)
                         try {
                             out.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                 }
             }
@@ -988,7 +991,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                 FileOutputStream out = null;
                 InputStream in = null;
                 try {
-                    Log.i(TAG, "Reading URI=" + data.getData());
+                    Logger.i("Reading URI=" + data.getData());
                     ContentResolver resolver = getContentResolver();
                     String[] streamTypes = resolver.getStreamTypes(data.getData(), "*/*");
                     String streamType = (streamTypes == null || streamTypes.length == 0 ? "*/*" : streamTypes[0]);
@@ -1003,24 +1006,24 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                         out.write(buf, 0, len);
                         total += len;
                     }
-                    Log.i(TAG, "Copied bytes=" + total);
+                    Logger.i("Copied bytes=" + total);
 
                     return null;
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     return ex;
                 } finally {
                     if (out != null)
                         try {
                             out.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                     if (in != null)
                         try {
                             in.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                 }
             }
@@ -1052,7 +1055,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
             protected Throwable doInBackground(Object... objects) {
                 InputStream in = null;
                 try {
-                    Log.i(TAG, "Reading URI=" + data.getData());
+                    Logger.i("Reading URI=" + data.getData());
                     ContentResolver resolver = getContentResolver();
                     String[] streamTypes = resolver.getStreamTypes(data.getData(), "*/*");
                     String streamType = (streamTypes == null || streamTypes.length == 0 ? "*/*" : streamTypes[0]);
@@ -1061,14 +1064,14 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                     xmlImport(in);
                     return null;
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     return ex;
                 } finally {
                     if (in != null)
                         try {
                             in.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                 }
             }
@@ -1188,7 +1191,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                 serializer.endTag(null, "setting");
 
             } else
-                Log.e(TAG, "Unknown key=" + key);
+                Logger.e("Unknown key=" + key);
         }
     }
 
@@ -1303,7 +1306,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
             else if (value instanceof Set)
                 editor.putStringSet(key, (Set<String>) value);
             else
-                Log.e(TAG, "Unknown type=" + value.getClass());
+                Logger.e("Unknown type=" + value.getClass());
         }
 
         editor.apply();
@@ -1361,12 +1364,12 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
 
             else if (qName.equals("filter")) {
                 current = null;
-                Log.i(TAG, "Clearing filters");
+                Logger.i("Clearing filters");
                 DatabaseHelper.getInstance(context).clearAccess();
 
             } else if (qName.equals("forward")) {
                 current = null;
-                Log.i(TAG, "Clearing forwards");
+                Logger.i("Clearing forwards");
                 DatabaseHelper.getInstance(context).deleteForward();
 
             } else if (qName.equals("setting")) {
@@ -1375,7 +1378,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                 String value = attributes.getValue("value");
 
                 if (current == null)
-                    Log.e(TAG, "No current key=" + key);
+                    Logger.e("No current key=" + key);
                 else {
                     if ("enabled".equals(key))
                         enabled = Boolean.parseBoolean(value);
@@ -1410,7 +1413,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                                     set.add(s);
                             current.put(key, set);
                         } else
-                            Log.e(TAG, "Unknown type key=" + key);
+                            Logger.e("Unknown type key=" + key);
                     }
                 }
 
@@ -1433,7 +1436,7 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                     packet.uid = getUid(pkg);
                     DatabaseHelper.getInstance(context).updateAccess(packet, null, block);
                 } catch (PackageManager.NameNotFoundException ex) {
-                    Log.w(TAG, "Package not found pkg=" + pkg);
+                    Logger.w("Package not found pkg=" + pkg);
                 }
 
             } else if (qName.equals("port")) {
@@ -1447,11 +1450,11 @@ public class ActivitySettings extends AppCompatActivity implements SharedPrefere
                     int uid = getUid(pkg);
                     DatabaseHelper.getInstance(context).addForward(protocol, dport, raddr, rport, uid);
                 } catch (PackageManager.NameNotFoundException ex) {
-                    Log.w(TAG, "Package not found pkg=" + pkg);
+                    Logger.w("Package not found pkg=" + pkg);
                 }
 
             } else
-                Log.e(TAG, "Unknown element qname=" + qName);
+                Logger.e("Unknown element qname=" + qName);
         }
 
         private int getUid(String pkg) throws PackageManager.NameNotFoundException {

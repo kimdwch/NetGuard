@@ -28,6 +28,8 @@ import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import com.orhanobut.logger.Logger;
+
 import java.util.Map;
 
 public class ReceiverAutostart extends BroadcastReceiver {
@@ -35,7 +37,7 @@ public class ReceiverAutostart extends BroadcastReceiver {
 
     @Override
     public void onReceive(final Context context, Intent intent) {
-        Log.i(TAG, "Received " + intent);
+        Logger.i("Received " + intent);
         Util.logExtras(intent);
 
         String action = (intent == null ? null : intent.getAction());
@@ -54,7 +56,7 @@ public class ReceiverAutostart extends BroadcastReceiver {
                 if (Util.isInteractive(context))
                     ServiceSinkhole.reloadStats("receiver", context);
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
     }
 
@@ -65,13 +67,13 @@ public class ReceiverAutostart extends BroadcastReceiver {
             int newVersion = Util.getSelfVersionCode(context);
             if (oldVersion == newVersion)
                 return;
-            Log.i(TAG, "Upgrading from version " + oldVersion + " to " + newVersion);
+            Logger.i("Upgrading from version " + oldVersion + " to " + newVersion);
 
             SharedPreferences.Editor editor = prefs.edit();
 
             if (initialized) {
                 if (oldVersion < 38) {
-                    Log.i(TAG, "Converting screen wifi/mobile");
+                    Logger.i("Converting screen wifi/mobile");
                     editor.putBoolean("screen_wifi", prefs.getBoolean("unused", false));
                     editor.putBoolean("screen_other", prefs.getBoolean("unused", false));
                     editor.remove("unused");
@@ -94,7 +96,7 @@ public class ReceiverAutostart extends BroadcastReceiver {
                     editor.remove("ip6");
 
             } else {
-                Log.i(TAG, "Initializing sdk=" + Build.VERSION.SDK_INT);
+                Logger.i("Initializing sdk=" + Build.VERSION.SDK_INT);
                 editor.putBoolean("filter_udp", true);
                 editor.putBoolean("whitelist_wifi", false);
                 editor.putBoolean("whitelist_other", false);

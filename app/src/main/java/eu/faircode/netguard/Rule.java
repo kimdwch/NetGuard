@@ -30,7 +30,10 @@ import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
+
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import org.xmlpull.v1.XmlPullParser;
 
@@ -122,7 +125,7 @@ public class Rule {
     }
 
     public static void clearCache(Context context) {
-        Log.i(TAG, "Clearing cache");
+        Logger.i("Clearing cache");
         synchronized (context.getApplicationContext()) {
             cachePackageInfo = null;
             cacheLabel.clear();
@@ -267,7 +270,7 @@ public class Rule {
                     eventType = xml.next();
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
             // Build rule list
@@ -389,7 +392,7 @@ public class Rule {
                         listRules.add(rule);
                     }
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
 
             // Sort rule list

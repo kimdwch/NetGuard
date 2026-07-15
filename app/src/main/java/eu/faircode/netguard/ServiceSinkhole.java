@@ -66,6 +66,7 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+
 import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
@@ -76,6 +77,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
+
+import com.orhanobut.logger.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -234,7 +237,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 r = "64";
             record_size = Integer.parseInt(r);
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
 
         int file_size = 2 * 1024 * 1024;
@@ -244,7 +247,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 f = "2";
             file_size = Integer.parseInt(f) * 1024 * 1024;
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
 
         File pcap = (enabled ? new File(context.getDir("data", MODE_PRIVATE), "netguard.pcap") : null);
@@ -300,7 +303,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     handleIntent((Intent) msg.obj);
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             } finally {
                 synchronized (this) {
                     queue--;
@@ -311,10 +314,10 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     if (wl.isHeld())
                         wl.release();
                     else
-                        Log.w(TAG, "Wakelock under-locked");
-                    Log.i(TAG, "Messages=" + hasMessages(0) + " wakelock=" + wlInstance.isHeld());
+                        Logger.w("Wakelock under-locked");
+                    Logger.i("Messages=" + hasMessages(0) + " wakelock=" + wlInstance.isHeld());
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
             }
         }
@@ -324,13 +327,13 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             Command cmd = (Command) intent.getSerializableExtra(EXTRA_COMMAND);
             String reason = intent.getStringExtra(EXTRA_REASON);
-            Log.i(TAG, "Executing intent=" + intent + " command=" + cmd + " reason=" + reason +
+            Logger.i("Executing intent=" + intent + " command=" + cmd + " reason=" + reason +
                     " vpn=" + (vpn != null) + " user=" + (Process.myUid() / 100000));
 
             // Check if foreground
             if (cmd != Command.stop)
                 if (!user_foreground) {
-                    Log.i(TAG, "Command " + cmd + " ignored for background user");
+                    Logger.i("Command " + cmd + " ignored for background user");
                     return;
                 }
 
@@ -341,14 +344,14 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 temporarilyStopped = false;
             else if (cmd == Command.reload && temporarilyStopped) {
                 // Prevent network/interactive changes from restarting the VPN
-                Log.i(TAG, "Command " + cmd + " ignored because of temporary stop");
+                Logger.i("Command " + cmd + " ignored because of temporary stop");
                 return;
             }
 
             // Optionally listen for interactive state changes
             if (prefs.getBoolean("screen_on", true)) {
                 if (!registeredInteractiveState) {
-                    Log.i(TAG, "Starting listening for interactive state changes");
+                    Logger.i("Starting listening for interactive state changes");
                     last_interactive = Util.isInteractive(ServiceSinkhole.this);
                     IntentFilter ifInteractive = new IntentFilter();
                     ifInteractive.addAction(Intent.ACTION_SCREEN_ON);
@@ -359,7 +362,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 }
             } else {
                 if (registeredInteractiveState) {
-                    Log.i(TAG, "Stopping listening for interactive state changes");
+                    Logger.i("Stopping listening for interactive state changes");
                     unregisterReceiver(interactiveStateReceiver);
                     registeredInteractiveState = false;
                     last_interactive = false;
@@ -370,11 +373,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             if (prefs.getBoolean("disable_on_call", false)) {
                 if (tm != null && callStateListener == null && Util.hasPhoneStatePermission(ServiceSinkhole.this)) {
-                    Log.i(TAG, "Starting listening for call states");
+                    Logger.i("Starting listening for call states");
                     PhoneStateListener listener = new PhoneStateListener() {
                         @Override
                         public void onCallStateChanged(int state, String incomingNumber) {
-                            Log.i(TAG, "New call state=" + state);
+                            Logger.i("New call state=" + state);
                             if (prefs.getBoolean("enabled", false))
                                 if (state == TelephonyManager.CALL_STATE_IDLE)
                                     ServiceSinkhole.start("call state", ServiceSinkhole.this);
@@ -387,7 +390,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 }
             } else {
                 if (tm != null && callStateListener != null) {
-                    Log.i(TAG, "Stopping listening for call states");
+                    Logger.i("Stopping listening for call states");
                     tm.listen(callStateListener, PhoneStateListener.LISTEN_NONE);
                     callStateListener = null;
                 }
@@ -409,7 +412,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 if (cmd != Command.stop) {
                     int watchdog = Integer.parseInt(prefs.getString("watchdog", "0"));
                     if (watchdog > 0) {
-                        Log.i(TAG, "Watchdog " + watchdog + " minutes");
+                        Logger.i("Watchdog " + watchdog + " minutes");
                         am.setInexactRepeating(AlarmManager.RTC, SystemClock.elapsedRealtime() + watchdog * 60 * 1000, watchdog * 60 * 1000, pi);
                     }
                 }
@@ -446,7 +449,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         break;
 
                     default:
-                        Log.e(TAG, "Unknown command=" + cmd);
+                        Logger.e("Unknown command=" + cmd);
                 }
 
                 if (cmd == Command.start || cmd == Command.reload) {
@@ -480,11 +483,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 // Request garbage collection
                 System.gc();
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
 
                 if (cmd == Command.start || cmd == Command.reload) {
                     if (VpnService.prepare(ServiceSinkhole.this) == null) {
-                        Log.w(TAG, "VPN prepared connected=" + last_connected);
+                        Logger.w("VPN prepared connected=" + last_connected);
                         if (last_connected && !(ex instanceof StartFailedException)) {
                             //showAutoStartNotification();
                             if (!Util.isPlayStoreInstall(ServiceSinkhole.this))
@@ -508,12 +511,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         private void start() {
             if (vpn == null) {
                 if (state != State.none) {
-                    Log.d(TAG, "Stop foreground state=" + state.toString());
+                    Logger.d("Stop foreground state=" + state.toString());
                     stopForeground(true);
                 }
                 startForeground(NOTIFY_ENFORCING, getEnforcingNotification(-1, -1, -1));
                 state = State.enforcing;
-                Log.d(TAG, "Start foreground state=" + state.toString());
+                Logger.d("Start foreground state=" + state.toString());
 
                 List<Rule> listRule = Rule.getRules(true, ServiceSinkhole.this);
                 List<Rule> listAllowed = getAllowedRules(listRule);
@@ -545,7 +548,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     }
                 }
                 if (!process) {
-                    Log.i(TAG, "No changed rules on interactive state change");
+                    Logger.i("No changed rules on interactive state change");
                     return;
                 }
             }
@@ -554,12 +557,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             if (state != State.enforcing) {
                 if (state != State.none) {
-                    Log.d(TAG, "Stop foreground state=" + state.toString());
+                    Logger.d("Stop foreground state=" + state.toString());
                     stopForeground(true);
                 }
                 startForeground(NOTIFY_ENFORCING, getEnforcingNotification(-1, -1, -1));
                 state = State.enforcing;
-                Log.d(TAG, "Start foreground state=" + state.toString());
+                Logger.d("Start foreground state=" + state.toString());
             }
 
             List<Rule> listAllowed = getAllowedRules(listRule);
@@ -567,7 +570,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
                 last_builder = builder;
-                Log.i(TAG, "Legacy restart");
+                Logger.i("Legacy restart");
 
                 if (vpn != null) {
                     stopNative(vpn);
@@ -582,7 +585,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             } else {
                 if (vpn != null && prefs.getBoolean("filter", false) && builder.equals(last_builder)) {
-                    Log.i(TAG, "Native restart");
+                    Logger.i("Native restart");
                     stopNative(vpn);
 
                 } else {
@@ -591,7 +594,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     boolean handover = prefs.getBoolean("handover", false);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                         handover = false;
-                    Log.i(TAG, "VPN restart handover=" + handover);
+                    Logger.i("VPN restart handover=" + handover);
 
                     if (handover) {
                         // Attempt seamless handover
@@ -599,7 +602,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         vpn = startVPN(builder);
 
                         if (prev != null && vpn == null) {
-                            Log.w(TAG, "Handover failed");
+                            Logger.w("Handover failed");
                             stopNative(prev);
                             stopVPN(prev);
                             prev = null;
@@ -644,7 +647,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 unprepare();
             }
             if (state == State.enforcing && !temporary) {
-                Log.d(TAG, "Stop foreground state=" + state.toString());
+                Logger.d("Stop foreground state=" + state.toString());
                 last_allowed = -1;
                 last_blocked = -1;
                 last_hosts = -1;
@@ -655,7 +658,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 if (prefs.getBoolean("show_stats", false)) {
                     startForeground(NOTIFY_WAITING, getWaitingNotification());
                     state = State.waiting;
-                    Log.d(TAG, "Start foreground state=" + state.toString());
+                    Logger.d("Start foreground state=" + state.toString());
                 } else {
                     state = State.none;
                     stopSelf();
@@ -682,7 +685,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             if (vpn == null) {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
                 if (prefs.getBoolean("enabled", false)) {
-                    Log.e(TAG, "Service was killed");
+                    Logger.e("Service was killed");
                     start();
                 }
             }
@@ -701,7 +704,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     json.append(line);
 
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             } finally {
                 if (urlConnection != null)
                     urlConnection.disconnect();
@@ -717,20 +720,20 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         if (jasset.has("name")) {
                             String version = jroot.getString("tag_name");
                             String name = jasset.getString("name");
-                            Log.i(TAG, "Tag " + version + " name " + name + " url " + url);
+                            Logger.i("Tag " + version + " name " + name + " url " + url);
 
                             Version current = new Version(Util.getSelfVersionName(ServiceSinkhole.this));
                             Version available = new Version(version);
                             if (current.compareTo(available) < 0) {
-                                Log.i(TAG, "Update available from " + current + " to " + available);
+                                Logger.i("Update available from " + current + " to " + available);
                                 showUpdateNotification(name, url);
                             } else
-                                Log.i(TAG, "Up-to-date current version " + current);
+                                Logger.i("Up-to-date current version " + current);
                         }
                     }
                 }
             } catch (JSONException ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         }
 
@@ -759,7 +762,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             synchronized (this) {
                 if (queue > MAX_QUEUE) {
-                    Log.w(TAG, "Log queue full");
+                    Logger.w("Log queue full");
                     return;
                 }
 
@@ -776,7 +779,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             synchronized (this) {
                 if (queue > MAX_QUEUE) {
-                    Log.w(TAG, "Log queue full");
+                    Logger.w("Log queue full");
                     return;
                 }
 
@@ -799,7 +802,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         break;
 
                     default:
-                        Log.e(TAG, "Unknown log message=" + msg.what);
+                        Logger.e("Unknown log message=" + msg.what);
                 }
 
                 synchronized (this) {
@@ -807,7 +810,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 }
 
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         }
 
@@ -849,7 +852,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 if (filter && log_app && track_usage) {
                     DatabaseHelper dh = DatabaseHelper.getInstance(ServiceSinkhole.this);
                     String dname = dh.getQName(usage.Uid, usage.DAddr);
-                    Log.i(TAG, "Usage account " + usage + " dname=" + dname);
+                    Logger.i("Usage account " + usage + " dname=" + dname);
                     dh.updateUsage(usage, dname);
                 }
             }
@@ -891,17 +894,17 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         break;
 
                     default:
-                        Log.e(TAG, "Unknown stats message=" + msg.what);
+                        Logger.e("Unknown stats message=" + msg.what);
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         }
 
         private void startStats() {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
             boolean enabled = (!stats && prefs.getBoolean("show_stats", false));
-            Log.i(TAG, "Stats start enabled=" + enabled);
+            Logger.i("Stats start enabled=" + enabled);
             if (enabled) {
                 when = new Date().getTime();
                 t = -1;
@@ -917,11 +920,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         }
 
         private void stopStats() {
-            Log.i(TAG, "Stats stop");
+            Logger.i("Stats stop");
             stats = false;
             this.removeMessages(MSG_STATS_UPDATE);
             if (state == State.stats) {
-                Log.d(TAG, "Stop foreground state=" + state.toString());
+                Logger.d("Stop foreground state=" + state.toString());
                 stopForeground(true);
                 state = State.none;
             } else
@@ -1129,12 +1132,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             if (state == State.none || state == State.waiting) {
                 if (state != State.none) {
-                    Log.d(TAG, "Stop foreground state=" + state.toString());
+                    Logger.d("Stop foreground state=" + state.toString());
                     stopForeground(true);
                 }
                 startForeground(NOTIFY_TRAFFIC, builder.build());
                 state = State.stats;
-                Log.d(TAG, "Start foreground state=" + state.toString());
+                Logger.d("Start foreground state=" + state.toString());
             } else {
                 if (Util.canNotify(ServiceSinkhole.this))
                     NotificationManagerCompat.from(ServiceSinkhole.this).notify(NOTIFY_TRAFFIC, builder.build());
@@ -1152,7 +1155,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         boolean filter = prefs.getBoolean("filter", false);
         String vpnDns1 = prefs.getString("dns", null);
         String vpnDns2 = prefs.getString("dns2", null);
-        Log.i(TAG, "DNS system=" + TextUtils.join(",", sysDns) + " config=" + vpnDns1 + "," + vpnDns2);
+        Logger.i("DNS system=" + TextUtils.join(",", sysDns) + " config=" + vpnDns1 + "," + vpnDns2);
 
         if (vpnDns1 != null)
             try {
@@ -1170,7 +1173,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         (ip6 || dns instanceof Inet4Address))
                     listDns.add(dns);
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
         if (listDns.size() == 2)
@@ -1184,7 +1187,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         (ip6 || ddns instanceof Inet4Address))
                     listDns.add(ddns);
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
         // Remove local DNS servers when not routing LAN
@@ -1210,13 +1213,13 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                             BigInteger ip = new BigInteger(1, dns.getAddress());
 
                             if (host.and(mask).equals(ip.and(mask))) {
-                                Log.i(TAG, "Local DNS server host=" + hostAddress + "/" + prefix + " dns=" + dns);
+                                Logger.i("Local DNS server host=" + hostAddress + "/" + prefix + " dns=" + dns);
                                 listDns.remove(dns);
                             }
                         }
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
         // Always set DNS servers
@@ -1229,10 +1232,10 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     listDns.add(InetAddress.getByName("2001:4860:4860::8844"));
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
-        Log.i(TAG, "Get DNS=" + TextUtils.join(",", listDns));
+        Logger.i("Get DNS=" + TextUtils.join(",", listDns));
 
         return listDns;
     }
@@ -1247,7 +1250,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
                 Network active = (cm == null ? null : cm.getActiveNetwork());
                 if (active != null) {
-                    Log.i(TAG, "Setting underlying network=" + active + " " + cm.getNetworkInfo(active));
+                    Logger.i("Setting underlying network=" + active + " " + cm.getNetworkInfo(active));
                     setUnderlyingNetworks(new Network[]{active});
                 }
             }
@@ -1256,7 +1259,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         } catch (SecurityException ex) {
             throw ex;
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             return null;
         }
     }
@@ -1279,11 +1282,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         // VPN address
         String vpn4 = prefs.getString("vpn4", "10.1.10.1");
-        Log.i(TAG, "Using VPN4=" + vpn4);
+        Logger.i("Using VPN4=" + vpn4);
         builder.addAddress(vpn4, 32);
         if (ip6) {
             String vpn6 = prefs.getString("vpn6", "fd00:1:fd00:1:fd00:1:fd00:1");
-            Log.i(TAG, "Using VPN6=" + vpn6);
+            Logger.i("Using VPN6=" + vpn6);
             builder.addAddress(vpn6, 128);
         }
 
@@ -1291,7 +1294,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         if (filter)
             for (InetAddress dns : getDns(ServiceSinkhole.this)) {
                 if (ip6 || dns instanceof Inet4Address) {
-                    Log.i(TAG, "Using DNS=" + dns);
+                    Logger.i("Using DNS=" + dns);
                     builder.addDnsServer(dns);
                 }
             }
@@ -1303,11 +1306,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 LinkProperties props = (active == null ? null : cm.getLinkProperties(active));
                 String domain = (props == null ? null : props.getDomains());
                 if (domain != null) {
-                    Log.i(TAG, "Using search domain=" + domain);
+                    Logger.i("Using search domain=" + domain);
                     builder.addSearchDomain(domain);
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
         // Subnet routing
@@ -1340,7 +1343,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                             }
                         }
                 } catch (Throwable ex) {
-                    Log.e(TAG, ex.toString());
+                    Logger.e(ex.toString());
                 }
             }
 
@@ -1359,12 +1362,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 String dns_specifier = Util.getPrivateDnsSpecifier(ServiceSinkhole.this);
                 if (!TextUtils.isEmpty(dns_specifier))
                     try {
-                        Log.i(TAG, "Resolving private dns=" + dns_specifier);
+                        Logger.i("Resolving private dns=" + dns_specifier);
                         for (InetAddress pdns : InetAddress.getAllByName(dns_specifier))
                             if (pdns instanceof Inet4Address)
                                 listExclude.add(new IPUtil.CIDR(pdns.getHostAddress(), 32));
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString());
+                        Logger.e(ex.toString());
                     }
             }
 
@@ -1434,12 +1437,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             try {
                 InetAddress start = InetAddress.getByName("0.0.0.0");
                 for (IPUtil.CIDR exclude : listExclude) {
-                    Log.i(TAG, "Exclude " + exclude.getStart().getHostAddress() + "..." + exclude.getEnd().getHostAddress());
+                    Logger.i("Exclude " + exclude.getStart().getHostAddress() + "..." + exclude.getEnd().getHostAddress());
                     for (IPUtil.CIDR include : IPUtil.toCIDR(start, IPUtil.minus1(exclude.getStart())))
                         try {
                             builder.addRoute(include.address, include.prefix);
                         } catch (Throwable ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                     start = IPUtil.plus1(exclude.getEnd());
                 }
@@ -1448,21 +1451,21 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     try {
                         builder.addRoute(include.address, include.prefix);
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
             } catch (UnknownHostException ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         } else
             builder.addRoute("0.0.0.0", 0);
 
-        Log.i(TAG, "IPv6=" + ip6);
+        Logger.i("IPv6=" + ip6);
         if (ip6)
             builder.addRoute("2000::", 3); // unicast
 
         // MTU
         int mtu = jni_get_mtu();
-        Log.i(TAG, "MTU=" + mtu);
+        Logger.i("MTU=" + mtu);
         builder.setMtu(mtu);
 
         // Add list of allowed applications
@@ -1476,29 +1479,29 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 for (String packageName : mapDisallowed.keySet())
                     try {
                         builder.addAllowedApplication(packageName);
-                        Log.i(TAG, "Sinkhole " + packageName);
+                        Logger.i("Sinkhole " + packageName);
                     } catch (PackageManager.NameNotFoundException ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
                 if (mapDisallowed.size() == 0)
                     try {
                         builder.addAllowedApplication(getPackageName());
                     } catch (PackageManager.NameNotFoundException ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
             } else if (filter) {
                 try {
                     builder.addDisallowedApplication(getPackageName());
                 } catch (PackageManager.NameNotFoundException ex) {
-                    Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                    Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 }
                 for (Rule rule : listRule)
                     if (!rule.apply || (!system && rule.system))
                         try {
-                            Log.i(TAG, "Not routing " + rule.packageName);
+                            Logger.i("Not routing " + rule.packageName);
                             builder.addDisallowedApplication(rule.packageName);
                         } catch (PackageManager.NameNotFoundException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
             }
         }
@@ -1517,7 +1520,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         boolean log_app = prefs.getBoolean("log_app", false);
         boolean filter = prefs.getBoolean("filter", false);
 
-        Log.i(TAG, "Start native log=" + log + "/" + log_app + " filter=" + filter);
+        Logger.i("Start native log=" + log + "/" + log_app + " filter=" + filter);
 
         // Prepare rules
         if (filter) {
@@ -1558,41 +1561,41 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 jni_socks5("", 0, "", "");
 
             if (tunnelThread == null) {
-                Log.i(TAG, "Starting tunnel thread context=" + jni_context);
+                Logger.i("Starting tunnel thread context=" + jni_context);
                 jni_start(jni_context, prio);
 
                 tunnelThread = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        Log.i(TAG, "Running tunnel context=" + jni_context);
+                        Logger.i("Running tunnel context=" + jni_context);
                         jni_run(jni_context, vpn.getFd(), mapForward.containsKey(53), rcode);
-                        Log.i(TAG, "Tunnel exited");
+                        Logger.i("Tunnel exited");
                         tunnelThread = null;
                     }
                 });
                 //tunnelThread.setPriority(Thread.MAX_PRIORITY);
                 tunnelThread.start();
 
-                Log.i(TAG, "Started tunnel thread");
+                Logger.i("Started tunnel thread");
             }
         }
     }
 
     private void stopNative(ParcelFileDescriptor vpn) {
-        Log.i(TAG, "Stop native");
+        Logger.i("Stop native");
 
         if (tunnelThread != null) {
-            Log.i(TAG, "Stopping tunnel thread");
+            Logger.i("Stopping tunnel thread");
 
             jni_stop(jni_context);
 
             Thread thread = tunnelThread;
             while (thread != null && thread.isAlive()) {
                 try {
-                    Log.i(TAG, "Joining tunnel thread context=" + jni_context);
+                    Logger.i("Joining tunnel thread context=" + jni_context);
                     thread.join();
                 } catch (InterruptedException ignored) {
-                    Log.i(TAG, "Joined tunnel interrupted");
+                    Logger.i("Joined tunnel interrupted");
                 }
                 thread = tunnelThread;
             }
@@ -1600,7 +1603,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             jni_clear(jni_context);
 
-            Log.i(TAG, "Stopped tunnel thread");
+            Logger.i("Stopped tunnel thread");
         }
     }
 
@@ -1635,7 +1638,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         boolean use_hosts = prefs.getBoolean("filter", false) && prefs.getBoolean("use_hosts", false);
         File hosts = new File(getFilesDir(), "hosts.txt");
         if (!use_hosts || !hosts.exists() || !hosts.canRead()) {
-            Log.i(TAG, "Hosts file use=" + use_hosts + " exists=" + hosts.exists());
+            Logger.i("Hosts file use=" + use_hosts + " exists=" + hosts.exists());
             lock.writeLock().lock();
             mapHostsBlocked.clear();
             lock.writeLock().unlock();
@@ -1644,7 +1647,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         boolean changed = (hosts.lastModified() != last_hosts_modified);
         if (!changed && mapHostsBlocked.size() > 0) {
-            Log.i(TAG, "Hosts file unchanged");
+            Logger.i("Hosts file unchanged");
             return;
         }
         last_hosts_modified = hosts.lastModified();
@@ -1669,19 +1672,19 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         count++;
                         mapHostsBlocked.put(words[1], true);
                     } else
-                        Log.i(TAG, "Invalid hosts file line: " + line);
+                        Logger.i("Invalid hosts file line: " + line);
                 }
             }
             mapHostsBlocked.put("test.netguard.me", true);
-            Log.i(TAG, count + " hosts read");
+            Logger.i(count + " hosts read");
         } catch (IOException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         } finally {
             if (br != null)
                 try {
                     br.close();
                 } catch (IOException exex) {
-                    Log.e(TAG, exex.toString() + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex.toString() + "\n" + Log.getStackTraceString(exex));
                 }
         }
 
@@ -1693,7 +1696,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         boolean malware = prefs.getBoolean("filter", false) && prefs.getBoolean("malware", false);
         File file = new File(getFilesDir(), "malware.txt");
         if (!malware || !file.exists() || !file.canRead()) {
-            Log.i(TAG, "Malware use=" + malware + " exists=" + file.exists());
+            Logger.i("Malware use=" + malware + " exists=" + file.exists());
             lock.writeLock().lock();
             mapMalware.clear();
             lock.writeLock().unlock();
@@ -1702,7 +1705,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         boolean changed = (file.lastModified() != last_malware_modified);
         if (!changed && mapMalware.size() > 0) {
-            Log.i(TAG, "Malware unchanged");
+            Logger.i("Malware unchanged");
             return;
         }
         last_malware_modified = file.lastModified();
@@ -1727,18 +1730,18 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         count++;
                         mapMalware.put(words[1], true);
                     } else
-                        Log.i(TAG, "Invalid malware file line: " + line);
+                        Logger.i("Invalid malware file line: " + line);
                 }
             }
-            Log.i(TAG, count + " malware read");
+            Logger.i(count + " malware read");
         } catch (IOException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         } finally {
             if (br != null)
                 try {
                     br.close();
                 } catch (IOException exex) {
-                    Log.e(TAG, exex.toString() + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex.toString() + "\n" + Log.getStackTraceString(exex));
                 }
         }
 
@@ -1806,19 +1809,19 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                                 IPRule rule = new IPRule(key, name + "/" + iname, block, time, ttl);
                                 mapUidIPFilters.get(key).put(iname, rule);
                                 if (exists)
-                                    Log.w(TAG, "Address conflict " + key + " " + daddr + "/" + dresource);
+                                    Logger.w("Address conflict " + key + " " + daddr + "/" + dresource);
                             } else if (exists) {
                                 mapUidIPFilters.get(key).get(iname).updateExpires(time, ttl);
                                 if (dname != null && ttl > 60 * 1000L)
-                                    Log.w(TAG, "Address updated " + key + " " + daddr + "/" + dresource);
+                                    Logger.w("Address updated " + key + " " + daddr + "/" + dresource);
                             } else {
                                 if (dname != null)
-                                    Log.i(TAG, "Ignored " + key + " " + daddr + "/" + dresource + "=" + block);
+                                    Logger.i("Ignored " + key + " " + daddr + "/" + dresource + "=" + block);
                             }
                         } else
-                            Log.w(TAG, "Address not numeric " + name);
+                            Logger.w("Address not numeric " + name);
                     } catch (UnknownHostException ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
                 }
             }
@@ -1847,7 +1850,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     fwd.rport = cursor.getInt(colRPort);
                     fwd.ruid = cursor.getInt(colRUid);
                     mapForward.put(fwd.dport, fwd);
-                    Log.i(TAG, "Forward " + fwd);
+                    Logger.i("Forward " + fwd);
                 }
             }
         }
@@ -1913,7 +1916,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         if (wifi && ssidHomes.size() > 0 &&
                 !(ssidHomes.contains(ssidNetwork) || ssidHomes.contains('"' + ssidNetwork + '"'))) {
             metered = true;
-            Log.i(TAG, "!@home=" + ssidNetwork + " homes=" + TextUtils.join(",", ssidHomes));
+            Logger.i("!@home=" + ssidNetwork + " homes=" + TextUtils.join(",", ssidHomes));
         }
         if (unmetered_2g && "2G".equals(generation))
             metered = false;
@@ -1931,7 +1934,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         if (roaming && national)
             roaming = !Util.isNational(this);
 
-        Log.i(TAG, "Get allowed" +
+        Logger.i("Get allowed" +
                 " connected=" + last_connected +
                 " wifi=" + wifi +
                 " home=" + TextUtils.join(",", ssidHomes) +
@@ -1954,22 +1957,22 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     listAllowed.add(rule);
             }
 
-        Log.i(TAG, "Allowed " + listAllowed.size() + " of " + listRule.size());
+        Logger.i("Allowed " + listAllowed.size() + " of " + listRule.size());
         return listAllowed;
     }
 
     private void stopVPN(ParcelFileDescriptor pfd) {
-        Log.i(TAG, "Stopping");
+        Logger.i("Stopping");
         try {
             pfd.close();
         } catch (IOException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 
     // Called from native code
     private void nativeExit(String reason) {
-        Log.w(TAG, "Native exit reason=" + reason);
+        Logger.w("Native exit reason=" + reason);
         if (reason != null) {
             showErrorNotification(reason);
 
@@ -1981,7 +1984,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
     // Called from native code
     private void nativeError(int error, String message) {
-        Log.w(TAG, "Native error " + error + ": " + message);
+        Logger.w("Native error " + error + ": " + message);
         showErrorNotification(message);
     }
 
@@ -1993,7 +1996,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     // Called from native code
     private void dnsResolved(ResourceRecord rr) {
         if (DatabaseHelper.getInstance(ServiceSinkhole.this).insertDns(rr)) {
-            Log.i(TAG, "New IP " + rr);
+            Logger.i("New IP " + rr);
             prepareUidIPFilters(rr.QName);
         }
         if (rr.uid > 0 && !TextUtils.isEmpty(rr.AName)) {
@@ -2033,9 +2036,9 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         InetSocketAddress local = new InetSocketAddress(saddr, sport);
         InetSocketAddress remote = new InetSocketAddress(daddr, dport);
 
-        Log.i(TAG, "Get uid local=" + local + " remote=" + remote);
+        Logger.i("Get uid local=" + local + " remote=" + remote);
         int uid = cm.getConnectionOwnerUid(protocol, local, remote);
-        Log.i(TAG, "Get uid=" + uid);
+        Logger.i("Get uid=" + uid);
         return uid;
     }
 
@@ -2058,21 +2061,21 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             if (packet.protocol == 17 /* UDP */ && !prefs.getBoolean("filter_udp", false)) {
                 // Allow unfiltered UDP
                 packet.allowed = true;
-                Log.i(TAG, "Allowing UDP " + packet);
+                Logger.i("Allowing UDP " + packet);
             } else if (packet.uid < 2000 &&
                     !last_connected && isSupported(packet.protocol) && false) {
                 // Allow system applications in disconnected state
                 packet.allowed = true;
-                Log.w(TAG, "Allowing disconnected system " + packet);
+                Logger.w("Allowing disconnected system " + packet);
             } else if ((packet.uid < 2000 || BuildConfig.PLAY_STORE_RELEASE) &&
                     !mapUidKnown.containsKey(packet.uid) && isSupported(packet.protocol)) {
                 // Allow unknown (system) traffic
                 packet.allowed = true;
-                Log.w(TAG, "Allowing unknown system " + packet);
+                Logger.w("Allowing unknown system " + packet);
             } else if (packet.uid == Process.myUid()) {
                 // Allow self
                 packet.allowed = true;
-                Log.w(TAG, "Allowing self " + packet);
+                Logger.w("Allowing self " + packet);
             } else {
                 boolean filtered = false;
                 IPKey key = new IPKey(packet.version, packet.protocol, packet.dport, packet.uid);
@@ -2083,23 +2086,23 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         if (map != null && map.containsKey(iaddr)) {
                             IPRule rule = map.get(iaddr);
                             if (rule.isExpired())
-                                Log.i(TAG, "DNS expired " + packet + " rule " + rule);
+                                Logger.i("DNS expired " + packet + " rule " + rule);
                             else {
                                 filtered = true;
                                 packet.allowed = !rule.isBlocked();
-                                Log.i(TAG, "Filtering " + packet +
+                                Logger.i("Filtering " + packet +
                                         " allowed=" + packet.allowed + " rule " + rule);
                             }
                         }
                     } catch (UnknownHostException ex) {
-                        Log.w(TAG, "Allowed " + ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.w("Allowed " + ex.toString() + "\n" + Log.getStackTraceString(ex));
                     }
 
                 if (!filtered)
                     if (mapUidAllowed.containsKey(packet.uid))
                         packet.allowed = mapUidAllowed.get(packet.uid);
                     else
-                        Log.w(TAG, "No rules for " + packet);
+                        Logger.w("No rules for " + packet);
             }
         }
 
@@ -2135,7 +2138,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     private BroadcastReceiver interactiveStateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(final Context context, final Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             executor.submit(new Runnable() {
@@ -2176,7 +2179,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                         statsHandler.sendEmptyMessage(
                                 Util.isInteractive(ServiceSinkhole.this) ? MSG_STATS_START : MSG_STATS_STOP);
                     } catch (Throwable ex) {
-                        Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                        Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
 
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
                             am.set(AlarmManager.RTC_WAKEUP, new Date().getTime() + 15 * 1000L, pi);
@@ -2192,11 +2195,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         @Override
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             user_foreground = Intent.ACTION_USER_FOREGROUND.equals(intent.getAction());
-            Log.i(TAG, "User foreground=" + user_foreground + " user=" + (Process.myUid() / 100000));
+            Logger.i("User foreground=" + user_foreground + " user=" + (Process.myUid() / 100000));
 
             if (user_foreground) {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
@@ -2218,11 +2221,11 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         @Override
         @TargetApi(Build.VERSION_CODES.M)
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            Log.i(TAG, "device idle=" + pm.isDeviceIdleMode());
+            Logger.i("device idle=" + pm.isDeviceIdleMode());
 
             // Reload rules when coming from idle mode
             if (!pm.isDeviceIdleMode())
@@ -2234,7 +2237,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         @Override
         @TargetApi(Build.VERSION_CODES.M)
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
             reload("AP state changed", ServiceSinkhole.this, false);
         }
@@ -2251,7 +2254,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             }
 
             // Reload rules
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
             reload("connectivity changed", ServiceSinkhole.this, false);
         }
@@ -2269,8 +2272,8 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo ni = cm.getNetworkInfo(network);
             NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
-            Log.i(TAG, "Available network " + network + " " + ni);
-            Log.i(TAG, "Capabilities=" + capabilities);
+            Logger.i("Available network " + network + " " + ni);
+            Logger.i("Capabilities=" + capabilities);
             checkConnectivity(network, ni, capabilities);
         }
 
@@ -2278,8 +2281,8 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo ni = cm.getNetworkInfo(network);
-            Log.i(TAG, "New capabilities network " + network + " " + ni);
-            Log.i(TAG, "Capabilities=" + capabilities);
+            Logger.i("New capabilities network " + network + " " + ni);
+            Logger.i("Capabilities=" + capabilities);
             checkConnectivity(network, ni, capabilities);
         }
 
@@ -2287,14 +2290,14 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         public void onLosing(Network network, int maxMsToLive) {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo ni = cm.getNetworkInfo(network);
-            Log.i(TAG, "Losing network " + network + " within " + maxMsToLive + " ms " + ni);
+            Logger.i("Losing network " + network + " within " + maxMsToLive + " ms " + ni);
         }
 
         @Override
         public void onLost(Network network) {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo ni = cm.getNetworkInfo(network);
-            Log.i(TAG, "Lost network " + network + " " + ni);
+            Logger.i("Lost network " + network + " " + ni);
 
             synchronized (validated) {
                 validated.remove(network);
@@ -2303,7 +2306,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         @Override
         public void onUnavailable() {
-            Log.i(TAG, "No networks available");
+            Logger.i("No networks available");
         }
 
         private void checkConnectivity(Network network, NetworkInfo ni, NetworkCapabilities capabilities) {
@@ -2318,37 +2321,37 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 synchronized (validated) {
                     if (validated.containsKey(network) &&
                             validated.get(network) + 20 * 1000 > new Date().getTime()) {
-                        Log.i(TAG, "Already validated " + network + " " + ni);
+                        Logger.i("Already validated " + network + " " + ni);
                         return;
                     }
                 }
 
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
                 String host = prefs.getString("validate", "www.google.com");
-                Log.i(TAG, "Validating " + network + " " + ni + " host=" + host);
+                Logger.i("Validating " + network + " " + ni + " host=" + host);
 
                 Socket socket = null;
                 try {
                     socket = network.getSocketFactory().createSocket();
                     socket.connect(new InetSocketAddress(host, 443), 10000);
-                    Log.i(TAG, "Validated " + network + " " + ni + " host=" + host);
+                    Logger.i("Validated " + network + " " + ni + " host=" + host);
                     synchronized (validated) {
                         validated.put(network, new Date().getTime());
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
                         cm.reportNetworkConnectivity(network, true);
-                        Log.i(TAG, "Reported " + network + " " + ni);
+                        Logger.i("Reported " + network + " " + ni);
                     }
                 } catch (IOException ex) {
-                    Log.e(TAG, ex.toString());
-                    Log.i(TAG, "No connectivity " + network + " " + ni);
+                    Logger.e(ex.toString());
+                    Logger.i("No connectivity " + network + " " + ni);
                 } finally {
                     if (socket != null)
                         try {
                             socket.close();
                         } catch (IOException ex) {
-                            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
                         }
                 }
             }
@@ -2362,10 +2365,10 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         public void onDataConnectionStateChanged(int state, int networkType) {
             if (state == TelephonyManager.DATA_CONNECTED) {
                 String current_generation = Util.getNetworkGeneration(ServiceSinkhole.this);
-                Log.i(TAG, "Data connected generation=" + current_generation);
+                Logger.i("Data connected generation=" + current_generation);
 
                 if (last_generation == null || !last_generation.equals(current_generation)) {
-                    Log.i(TAG, "New network generation=" + current_generation);
+                    Logger.i("New network generation=" + current_generation);
                     last_generation = current_generation;
 
                     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
@@ -2381,7 +2384,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     private BroadcastReceiver packageChangedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received " + intent);
+            Logger.i("Received " + intent);
             Util.logExtras(intent);
 
             try {
@@ -2407,7 +2410,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     if (intent.getBooleanExtra(Intent.EXTRA_DATA_REMOVED, false)) {
                         // Remove settings
                         String packageName = intent.getData().getSchemeSpecificPart();
-                        Log.i(TAG, "Deleting settings package=" + packageName);
+                        Logger.i("Deleting settings package=" + packageName);
                         context.getSharedPreferences("wifi", Context.MODE_PRIVATE).edit().remove(packageName).apply();
                         context.getSharedPreferences("other", Context.MODE_PRIVATE).edit().remove(packageName).apply();
                         context.getSharedPreferences("screen_wifi", Context.MODE_PRIVATE).edit().remove(packageName).apply();
@@ -2431,7 +2434,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     reload("package deleted", context, false);
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
         }
     };
@@ -2541,19 +2544,19 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             }
 
         } catch (PackageManager.NameNotFoundException ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
         }
     }
 
     @Override
     public void onCreate() {
-        Log.i(TAG, "Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
+        Logger.i("Create version=" + Util.getSelfVersionName(this) + "/" + Util.getSelfVersionCode(this));
         startForeground(NOTIFY_WAITING, getWaitingNotification());
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         if (jni_context != 0) {
-            Log.w(TAG, "Create with context=" + jni_context);
+            Logger.w("Create with context=" + jni_context);
             jni_stop(jni_context);
             synchronized (jni_lock) {
                 jni_done(jni_context);
@@ -2563,7 +2566,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         // Native init
         jni_context = jni_init(Build.VERSION.SDK_INT);
-        Log.i(TAG, "Created context=" + jni_context);
+        Logger.i("Created context=" + jni_context);
         boolean pcap = prefs.getBoolean("pcap", false);
         setPcap(pcap, this);
 
@@ -2621,7 +2624,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             try {
                 listenNetworkChanges();
             } catch (Throwable ex) {
-                Log.w(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.w(ex.toString() + "\n" + Log.getStackTraceString(ex));
                 listenConnectivityChanges();
             }
         else
@@ -2650,7 +2653,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void listenNetworkChanges() {
         // Listen for network changes
-        Log.i(TAG, "Starting listening to network changes");
+        Logger.i("Starting listening to network changes");
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest.Builder builder = new NetworkRequest.Builder();
         builder.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
@@ -2666,7 +2669,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             @Override
             public void onAvailable(Network network) {
-                Log.i(TAG, "Available network=" + network);
+                Logger.i("Available network=" + network);
                 if (!isActiveNetwork(network))
                     return;
 
@@ -2678,7 +2681,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             @Override
             public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {
-                Log.i(TAG, "Changed properties=" + network + " props=" + linkProperties);
+                Logger.i("Changed properties=" + network + " props=" + linkProperties);
                 if (!isActiveNetwork(network))
                     return;
 
@@ -2688,7 +2691,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                         ? !same(last_dns, dns)
                         : prefs.getBoolean("reload_onconnectivity", false)) {
-                    Log.i(TAG, "Changed link properties=" + linkProperties +
+                    Logger.i("Changed link properties=" + linkProperties +
                             "DNS cur=" + TextUtils.join(",", dns) +
                             "DNS prv=" + (last_dns == null ? null : TextUtils.join(",", last_dns)));
                     last_dns = dns;
@@ -2698,14 +2701,14 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             @Override
             public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
-                Log.i(TAG, "Changed capabilities=" + network + " caps=" + networkCapabilities);
+                Logger.i("Changed capabilities=" + network + " caps=" + networkCapabilities);
                 if (!isActiveNetwork(network))
                     return;
 
                 boolean connected = Util.isConnected(ServiceSinkhole.this);
                 boolean metered = Util.isMeteredNetwork(ServiceSinkhole.this);
                 String generation = Util.getNetworkGeneration(ServiceSinkhole.this);
-                Log.i(TAG, "Connected=" + connected + "/" + last_connected +
+                Logger.i("Connected=" + connected + "/" + last_connected +
                         " unmetered=" + metered + "/" + last_metered +
                         " generation=" + generation + "/" + last_generation);
 
@@ -2739,7 +2742,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
             @Override
             public void onLost(Network network) {
-                Log.i(TAG, "Lost network=" + network + " active=" + isActiveNetwork(network));
+                Logger.i("Lost network=" + network + " active=" + isActiveNetwork(network));
                 if (last_active == null || !last_active.equals(network))
                     return;
 
@@ -2767,14 +2770,14 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
     private void listenConnectivityChanges() {
         // Listen for connectivity updates
-        Log.i(TAG, "Starting listening to connectivity changes");
+        Logger.i("Starting listening to connectivity changes");
         IntentFilter ifConnectivity = new IntentFilter();
         ifConnectivity.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         ContextCompat.registerReceiver(this, connectivityChangedReceiver, ifConnectivity, ContextCompat.RECEIVER_NOT_EXPORTED);
         registeredConnectivityChanged = true;
 
         // Listen for phone state changes
-        Log.i(TAG, "Starting listening to service state changes");
+        Logger.i("Starting listening to service state changes");
         TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         if (tm != null) {
             tm.listen(phoneStateListener, PhoneStateListener.LISTEN_DATA_CONNECTION_STATE);
@@ -2790,7 +2793,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Network active = cm.getActiveNetwork();
             if (active == null) {
-                Log.i(TAG, "getActiveNetwork: no active network");
+                Logger.i("getActiveNetwork: no active network");
                 return null;
             }
 
@@ -2798,7 +2801,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
             if (caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
                 return active;
             else
-                Log.w(TAG, "getActiveNetwork: active network is VPN");
+                Logger.w("getActiveNetwork: active network is VPN");
 
         }
 
@@ -2809,7 +2812,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         Network[] networks = cm.getAllNetworks();
         for (Network network : networks) {
             NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-            Log.i(TAG, "getActiveNetwork: network=" + network + " caps=" + caps);
+            Logger.i("getActiveNetwork: network=" + network + " caps=" + caps);
             if (caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
                 continue;
 
@@ -2818,12 +2821,12 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 continue;
             if (ni.getType() == ani.getType() &&
                     ni.getSubtype() == ani.getSubtype()) {
-                Log.i(TAG, "getActiveNetwork: returning network=" + network);
+                Logger.i("getActiveNetwork: returning network=" + network);
                 return network;
             }
         }
 
-        Log.i(TAG, "getActiveNetwork: no active network found");
+        Logger.i("getActiveNetwork: no active network found");
         return null;
     }
 
@@ -2834,17 +2837,17 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String name) {
         if ("theme".equals(name)) {
-            Log.i(TAG, "Theme changed");
+            Logger.i("Theme changed");
             Util.setTheme(this);
             if (state != State.none) {
-                Log.d(TAG, "Stop foreground state=" + state.toString());
+                Logger.d("Stop foreground state=" + state.toString());
                 stopForeground(true);
             }
             if (state == State.enforcing)
                 startForeground(NOTIFY_ENFORCING, getEnforcingNotification(-1, -1, -1));
             else if (state != State.none)
                 startForeground(NOTIFY_WAITING, getWaitingNotification());
-            Log.d(TAG, "Start foreground state=" + state.toString());
+            Logger.d("Start foreground state=" + state.toString());
         }
     }
 
@@ -2855,7 +2858,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         else
             startForeground(NOTIFY_WAITING, getWaitingNotification());
 
-        Log.i(TAG, "Received " + intent);
+        Logger.i("Received " + intent);
         Util.logExtras(intent);
 
         // Check for set command
@@ -2874,7 +2877,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
         // Handle service restart
         if (intent == null) {
-            Log.i(TAG, "Restart");
+            Logger.i("Restart");
 
             // Recreate intent
             intent = new Intent(this, ServiceSinkhole.class);
@@ -2890,7 +2893,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         if (cmd == null)
             intent.putExtra(EXTRA_COMMAND, enabled ? Command.start : Command.stop);
         String reason = intent.getStringExtra(EXTRA_REASON);
-        Log.i(TAG, "Start intent=" + intent + " command=" + cmd + " reason=" + reason +
+        Logger.i("Start intent=" + intent + " command=" + cmd + " reason=" + reason +
                 " vpn=" + (vpn != null) + " user=" + (Process.myUid() / 100000));
 
         commandHandler.queue(intent);
@@ -2904,7 +2907,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
         String network = intent.getStringExtra(EXTRA_NETWORK);
         String pkg = intent.getStringExtra(EXTRA_PACKAGE);
         boolean blocked = intent.getBooleanExtra(EXTRA_BLOCKED, false);
-        Log.i(TAG, "Set " + pkg + " " + network + "=" + blocked);
+        Logger.i("Set " + pkg + " " + network + "=" + blocked);
 
         // Get defaults
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(ServiceSinkhole.this);
@@ -2931,7 +2934,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
 
     @Override
     public void onRevoke() {
-        Log.i(TAG, "Revoke");
+        Logger.i("Revoke");
 
         // Disable firewall (will result in stop command)
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -2947,7 +2950,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
     @Override
     public void onDestroy() {
         synchronized (this) {
-            Log.i(TAG, "Destroy");
+            Logger.i("Destroy");
             commandLooper.quit();
             logLooper.quit();
             statsLooper.quit();
@@ -3011,10 +3014,10 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     unprepare();
                 }
             } catch (Throwable ex) {
-                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+                Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             }
 
-            Log.i(TAG, "Destroy context=" + jni_context);
+            Logger.i("Destroy context=" + jni_context);
             synchronized (jni_lock) {
                 jni_done(jni_context);
                 jni_context = 0;
@@ -3565,7 +3568,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 try {
                     context.startService(intent);
                 } catch (Throwable exex) {
-                    Log.e(TAG, exex + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex + "\n" + Log.getStackTraceString(exex));
                 }
         }
     }
@@ -3582,7 +3585,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 try {
                     context.startService(intent);
                 } catch (Throwable exex) {
-                    Log.e(TAG, exex + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex + "\n" + Log.getStackTraceString(exex));
                 }
         }
     }
@@ -3602,7 +3605,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                     try {
                         context.startService(intent);
                     } catch (Throwable exex) {
-                        Log.e(TAG, exex + "\n" + Log.getStackTraceString(exex));
+                        Logger.e(exex + "\n" + Log.getStackTraceString(exex));
                     }
             }
         }
@@ -3621,7 +3624,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 try {
                     context.startService(intent);
                 } catch (Throwable exex) {
-                    Log.e(TAG, exex + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex + "\n" + Log.getStackTraceString(exex));
                 }
         }
     }
@@ -3638,7 +3641,7 @@ public class ServiceSinkhole extends VpnService implements SharedPreferences.OnS
                 try {
                     context.startService(intent);
                 } catch (Throwable exex) {
-                    Log.e(TAG, exex + "\n" + Log.getStackTraceString(exex));
+                    Logger.e(exex + "\n" + Log.getStackTraceString(exex));
                 }
         }
     }

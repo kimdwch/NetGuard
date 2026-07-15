@@ -23,10 +23,13 @@ package eu.faircode.netguard;
 import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
+
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.orhanobut.logger.Logger;
 
 import java.net.InetAddress;
 
@@ -60,7 +63,7 @@ public class ActivityForwardApproval extends Activity {
             if (rport < 1024 && (iraddr.isLoopbackAddress() || iraddr.isAnyLocalAddress()))
                 throw new IllegalArgumentException("Port forwarding to privileged port on local address not possible");
         } catch (Throwable ex) {
-            Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            Logger.e(ex.toString() + "\n" + Log.getStackTraceString(ex));
             finish();
         }
 
@@ -97,7 +100,7 @@ am start -a eu.faircode.netguard.START_PORT_FORWARD \
 --ei ruid 9999 \
 --user 0
 */
-                    Log.i(TAG, "Start forwarding protocol " + protocol + " port " + dport + " to " + raddr + "/" + rport + " uid " + ruid);
+                    Logger.i("Start forwarding protocol " + protocol + " port " + dport + " to " + raddr + "/" + rport + " uid " + ruid);
                     DatabaseHelper dh = DatabaseHelper.getInstance(ActivityForwardApproval.this);
                     dh.deleteForward(protocol, dport);
                     dh.addForward(protocol, dport, raddr, rport, ruid);
@@ -110,7 +113,7 @@ am start -a eu.faircode.netguard.STOP_PORT_FORWARD \
 --ei dport 53 \
 --user 0
 */
-                    Log.i(TAG, "Stop forwarding protocol " + protocol + " port " + dport);
+                    Logger.i("Stop forwarding protocol " + protocol + " port " + dport);
                     DatabaseHelper.getInstance(ActivityForwardApproval.this).deleteForward(protocol, dport);
                 }
 
